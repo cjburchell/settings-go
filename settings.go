@@ -118,7 +118,7 @@ func (s *settings) GetBool(key string, fallback bool) bool {
 	return fallback
 }
 
-// Gets the settings object
+// Get the settings object
 func Get(configFile string) ISettings {
 	var settings = &settings{ cash: map[string]interface{}{}, configFile: configFile}
 	return settings
