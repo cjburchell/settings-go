@@ -20,7 +20,7 @@ pipeline{
                 stage('Vet') {
                     agent {
                         docker {
-                            image 'cjburchell/goci:1.13'
+                            image 'cjburchell/goci:1.14'
                             args '-v $WORKSPACE:$PROJECT_PATH'
                         }
                     }
@@ -39,7 +39,7 @@ pipeline{
                 stage('Lint') {
                     agent {
                         docker {
-                            image 'cjburchell/goci:1.13'
+                            image 'cjburchell/goci:1.14'
                             args '-v $WORKSPACE:$PROJECT_PATH'
                         }
                     }
@@ -57,7 +57,7 @@ pipeline{
         stage('Tests') {
             agent {
                 docker {
-                    image 'cjburchell/goci:1.13'
+                    image 'cjburchell/goci:1.14'
                     args '-v $WORKSPACE:$PROJECT_PATH'
                 }
             }
