@@ -26,8 +26,6 @@ pipeline{
                     }
                     steps {
                         script{
-                                sh """go get gopkg.in/yaml.v2"""
-                                sh """go get github.com/stretchr/testify/assert"""
                                 sh """go vet ./..."""
 
                                 def checkVet = scanForIssues tool: [$class: 'GoVet']
@@ -63,8 +61,6 @@ pipeline{
             }
             steps {
                 script{
-                    sh """go get gopkg.in/yaml.v2"""
-                    sh """go get github.com/stretchr/testify/assert"""
 
                     def testResults = sh returnStdout: true, script:"""go test -v ./..."""
                     writeFile file: 'test_results.txt', text: testResults
