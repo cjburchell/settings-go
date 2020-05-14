@@ -1,11 +1,12 @@
 package tests
 
 import (
-	"github.com/cjburchell/settings-go"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/cjburchell/settings-go"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEnv(t *testing.T) {
@@ -51,7 +52,7 @@ func TestCashed(t *testing.T) {
 }
 
 func TestJson(t *testing.T) {
-	d1 := []byte("{\n   \"testJsonString\":\"test\",\n   \"testJsonInt\":1,\n   \"testJsonBool\":true,\n   \"testJsonInt64\":2\n}")
+	d1 := []byte("{\n  \"testJsonString\": \"test\",\n  \"testJsonInt\": 1,\n  \"testJsonBool\": true,\n  \"testJsonInt64\": 2,\n  \"testJsonSub\": {\n    \"testJsonStringSub\": \"another test\"\n  }\n}")
 	err := ioutil.WriteFile("config.json", d1, 0644)
 	defer os.Remove("config.json")
 	assert.Nil(t, err)
@@ -60,14 +61,18 @@ func TestJson(t *testing.T) {
 	result2 := s.GetInt("testJsonInt", 0)
 	result3 := s.GetBool("testJsonBool", false)
 	result4 := s.GetInt64("testJsonInt64", 0)
+	subSetting := s.GetSection("testJsonSub")
+	assert.NotNil(t, subSetting)
+	result5 := subSetting.Get("testJsonStringSub", "")
 	assert.Equal(t, "test", result1, "String not equal")
 	assert.Equal(t, 1, result2, "int not equal")
 	assert.Equal(t, true, result3, "Bool not equal")
 	assert.Equal(t, int64(2), result4, "Int64 not equal")
+	assert.Equal(t, "another test", result5, "Substring not equal")
 }
 
 func TestYaml(t *testing.T) {
-	d1 := []byte("testYamlString: test\ntestYamlInt: 1\ntestYamlBool: true\ntestYamlInt64: 2")
+	d1 := []byte("testYamlString: test\ntestYamlInt: 1\ntestYamlBool: true\ntestYamlInt64: 2\ntestYamlSubValue:\n    testYamlStringSub: 'another test'")
 	err := ioutil.WriteFile("config.yaml", d1, 0644)
 	defer os.Remove("config.yaml")
 	assert.Nil(t, err)
@@ -76,8 +81,12 @@ func TestYaml(t *testing.T) {
 	result2 := s.GetInt("testYamlInt", 0)
 	result3 := s.GetBool("testYamlBool", false)
 	result4 := s.GetInt64("testYamlInt64", 0)
+	subSetting := s.GetSection("testYamlSubValue")
+	assert.NotNil(t, subSetting)
+	result5 := subSetting.Get("testYamlStringSub", "")
 	assert.Equal(t, "test", result1, "String not equal")
 	assert.Equal(t, 1, result2, "int not equal")
 	assert.Equal(t, true, result3, "Bool not equal")
 	assert.Equal(t, int64(2), result4, "Int64 not equal")
+	assert.Equal(t, "another test", result5, "Substring not equal")
 }

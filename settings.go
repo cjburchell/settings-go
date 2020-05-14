@@ -2,11 +2,12 @@ package settings
 
 import (
 	"encoding/json"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 // ISettings interface
@@ -15,12 +16,35 @@ type ISettings interface {
 	GetInt64(key string, fallback int64) int64
 	Get(key string, fallback string) string
 	GetBool(key string, fallback bool) bool
+	GetSection(key string) ISettings
 }
 
 type settings struct {
-	configFile string
 	configFileCash map[string]interface{}
-	cash map[string]interface{}
+	cash           map[string]interface{}
+}
+
+func (s *settings) GetSection(key string) ISettings {
+	if s.configFileCash != nil {
+		if value, ok := s.configFileCash[key]; ok {
+			var settings = &settings{cash: map[string]interface{}{}}
+			if valueMap, ok := value.(map[string]interface{}); ok {
+				settings.configFileCash = valueMap
+				return settings
+			}
+
+			if valueMap, ok := value.(map[interface{}]interface{}); ok {
+				settings.configFileCash = make(map[string]interface{})
+				for subKey, subValue := range valueMap {
+					settings.configFileCash[subKey.(string)] = subValue
+				}
+
+				return settings
+			}
+		}
+	}
+
+	return s
 }
 
 func (s *settings) Get(key string, fallback string) string {
@@ -67,29 +91,6 @@ func (s *settings) get(key string, fallback interface{}) interface{} {
 		return s.cash[key]
 	}
 
-	if s.configFileCash == nil {
-		if s.configFile != "" {
-			file, err := os.Open(s.configFile)
-			defer file.Close()
-			if err == nil {
-				byteValue, err := ioutil.ReadAll(file)
-				if err == nil {
-					var result map[string]interface{}
-					if strings.HasSuffix(s.configFile, ".json") {
-						err = json.Unmarshal(byteValue, &result)
-
-					} else if strings.HasSuffix(s.configFile, "yaml") {
-						err = yaml.Unmarshal(byteValue, &result)
-					}
-
-					if err == nil {
-						s.configFileCash = result
-					}
-				}
-			}
-		}
-	}
-
 	if s.configFileCash != nil {
 		if value, ok := s.configFileCash[key]; ok {
 			s.cash[key] = value
@@ -106,6 +107,31 @@ func (s *settings) get(key string, fallback interface{}) interface{} {
 
 }
 
+func loadConfigFile(configFileName string) map[string]interface{} {
+	if configFileName != "" {
+		file, err := os.Open(configFileName)
+		if err == nil {
+			defer file.Close()
+			byteValue, err := ioutil.ReadAll(file)
+			if err == nil {
+				var result map[string]interface{}
+				if strings.HasSuffix(configFileName, ".json") {
+					err = json.Unmarshal(byteValue, &result)
+
+				} else if strings.HasSuffix(configFileName, "yaml") {
+					err = yaml.Unmarshal(byteValue, &result)
+				}
+
+				if err == nil {
+					return result
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func (s *settings) GetBool(key string, fallback bool) bool {
 	value := s.get(key, fallback)
 	if val, ok := value.(bool); ok {
@@ -120,7 +146,7 @@ func (s *settings) GetBool(key string, fallback bool) bool {
 
 // Get the settings object
 func Get(configFile string) ISettings {
-	var settings = &settings{ cash: map[string]interface{}{}, configFile: configFile}
+	var settings = &settings{cash: map[string]interface{}{}}
+	settings.configFileCash = loadConfigFile(configFile)
 	return settings
 }
-
