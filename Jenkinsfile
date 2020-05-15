@@ -3,6 +3,7 @@ pipeline{
     environment {
             PROJECT_PATH = "/go/src/github.com/cjburchell/settings-go"
             VERSION = "v1.1.${env.BUILD_NUMBER}"
+            repository = "github.com/cjburchell/settings-go.git"
     }
 
     parameters {
@@ -85,7 +86,7 @@ pipeline{
                  script {
                     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD']]) {
                         sh """git tag ${VERSION}"""
-                        sh """git push https://${env.GIT_USERNAME}:${env.GIT_PASSWORD}@${repository} ${VERSION}"""
+                        sh """git push https://${env.GIT_USERNAME}:${env.GIT_PASSWORD}@${env.repository} ${VERSION}"""
                     }
 
                 }
