@@ -83,9 +83,10 @@ pipeline{
             when { expression { params.Release } }
             steps {
                  script {
+                    def repositoryUrl = scm.userRemoteConfigs[0].url
                     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD']]) {
                         sh """git tag ${VERSION}"""
-                        sh "git push https://${env.GIT_USERNAME}:${env.GIT_PASSWORD}@{repository} ${VERSION}"
+                        sh """git push https://${env.GIT_USERNAME}:${env.GIT_PASSWORD}@{repositoryUrl} ${VERSION}"""
                     }
 
                 }
