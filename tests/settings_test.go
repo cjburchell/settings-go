@@ -18,15 +18,23 @@ func TestEnv(t *testing.T) {
 	assert.Nil(t, err)
 	err = os.Setenv("testEnvInt64", "2")
 	assert.Nil(t, err)
+	err = os.Setenv("test_SubEnvString", "test5")
+	assert.Nil(t, err)
+
 	s := settings.Get("")
 	result1 := s.Get("testEnvString", "")
 	result2 := s.GetInt("testEnvInt", 0)
 	result3 := s.GetBool("testEnvBool", false)
 	result4 := s.GetInt64("testEnvInt64", 0)
+
+	sub := s.GetSection("test")
+	result5 := sub.Get("SubEnvString", "")
+
 	assert.Equal(t, "test", result1, "String not equal")
 	assert.Equal(t, 1, result2, "int not equal")
 	assert.Equal(t, true, result3, "Bool not equal")
 	assert.Equal(t, int64(2), result4, "Int64 not equal")
+	assert.Equal(t, "test5", result5, "sub string not equal")
 }
 
 func TestFallback(t *testing.T) {

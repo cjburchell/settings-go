@@ -20,31 +20,34 @@ type ISettings interface {
 }
 
 type settings struct {
+	section        string
 	configFileCash map[string]interface{}
 	cash           map[string]interface{}
 }
 
 func (s *settings) GetSection(key string) ISettings {
+
+	sectionName := key
+	if s.section != "" {
+		sectionName = s.section + "_" + key
+	}
+
+	var settings = &settings{cash: map[string]interface{}{}, configFileCash: s.configFileCash, section: sectionName}
+
 	if s.configFileCash != nil {
 		if value, ok := s.configFileCash[key]; ok {
-			var settings = &settings{cash: map[string]interface{}{}}
 			if valueMap, ok := value.(map[string]interface{}); ok {
 				settings.configFileCash = valueMap
-				return settings
-			}
-
-			if valueMap, ok := value.(map[interface{}]interface{}); ok {
+			} else if valueMap, ok := value.(map[interface{}]interface{}); ok {
 				settings.configFileCash = make(map[string]interface{})
 				for subKey, subValue := range valueMap {
 					settings.configFileCash[subKey.(string)] = subValue
 				}
-
-				return settings
 			}
 		}
 	}
 
-	return s
+	return settings
 }
 
 func (s *settings) Get(key string, fallback string) string {
@@ -98,7 +101,12 @@ func (s *settings) get(key string, fallback interface{}) interface{} {
 		}
 	}
 
-	if value, ok := os.LookupEnv(key); ok {
+	keyName := key
+	if s.section != "" {
+		keyName = s.section + "_" + key
+	}
+
+	if value, ok := os.LookupEnv(keyName); ok {
 		s.cash[key] = value
 		return s.cash[key]
 	}
