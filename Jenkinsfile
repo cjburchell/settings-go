@@ -2,7 +2,12 @@ pipeline{
     agent any
     environment {
             PROJECT_PATH = "/go/src/github.com/cjburchell/settings-go"
+            VERSION = "v1.1.${env.BUILD_NUMBER}"
     }
+
+    parameters {
+            booleanParam(name: 'Release', defaultValue: false, description: 'Should tag release?')
+        }
 
     stages {
         stage('Setup') {
@@ -70,6 +75,16 @@ pipeline{
                     archiveArtifacts 'test_results.txt'
                     archiveArtifacts 'tests.xml'
                     junit allowEmptyResults: true, testResults: 'tests.xml'
+                }
+            }
+        }
+
+        stage('Release') {
+            when { expression { params.Release } }
+            steps {
+                 script {
+                    sh """git tag ${VERSION}"""
+                    sh """git push origin ${VERSION}"""
                 }
             }
         }
