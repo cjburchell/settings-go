@@ -9,32 +9,78 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEnv(t *testing.T) {
+func TestEnvString(t *testing.T) {
 	err := os.Setenv("testEnvString", "test")
 	assert.Nil(t, err)
-	err = os.Setenv("testEnvInt", "1")
-	assert.Nil(t, err)
-	err = os.Setenv("testEnvBool", "true")
-	assert.Nil(t, err)
-	err = os.Setenv("testEnvInt64", "2")
-	assert.Nil(t, err)
-	err = os.Setenv("test_SubEnvString", "test5")
-	assert.Nil(t, err)
-
 	s := settings.Get("")
 	result1 := s.Get("testEnvString", "")
-	result2 := s.GetInt("testEnvInt", 0)
-	result3 := s.GetBool("testEnvBool", false)
-	result4 := s.GetInt64("testEnvInt64", 0)
+	assert.Equal(t, "test", result1, "String not equal")
+}
 
+func TestEnvInt(t *testing.T) {
+	err := os.Setenv("testEnvInt", "1")
+	assert.Nil(t, err)
+	s := settings.Get("")
+	result := s.GetInt("testEnvInt", 0)
+	assert.Equal(t, 1, result, "int not equal")
+}
+
+func TestEnvBool(t *testing.T) {
+	err := os.Setenv("testEnvBool", "true")
+	assert.Nil(t, err)
+	s := settings.Get("")
+	result := s.GetBool("testEnvBool", false)
+	assert.Equal(t, true, result, "Bool not equal")
+}
+
+func TestEnvInt64(t *testing.T) {
+	err := os.Setenv("testEnvInt64", "2")
+	assert.Nil(t, err)
+	s := settings.Get("")
+	result4 := s.GetInt64("testEnvInt64", 0)
+	assert.Equal(t, int64(2), result4, "Int64 not equal")
+}
+
+func TestEnvSubEnv(t *testing.T) {
+	err := os.Setenv("test_SubEnvString", "test5")
+	assert.Nil(t, err)
+	s := settings.Get("")
 	sub := s.GetSection("test")
 	result5 := sub.Get("SubEnvString", "")
-
-	assert.Equal(t, "test", result1, "String not equal")
-	assert.Equal(t, 1, result2, "int not equal")
-	assert.Equal(t, true, result3, "Bool not equal")
-	assert.Equal(t, int64(2), result4, "Int64 not equal")
 	assert.Equal(t, "test5", result5, "sub string not equal")
+}
+
+func TestEnvObjectYaml(t *testing.T) {
+	err := os.Setenv("testEnvYamlObj", "testYaml: 'another test1'")
+	assert.Nil(t, err)
+	s := settings.Get("")
+
+	yamlObj := testObject{}
+	err = s.GetObject("testEnvYamlObj", &yamlObj)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "another test1", yamlObj.TheValue, "yaml obj not equal")
+}
+
+func TestObjectJson(t *testing.T) {
+	err := os.Setenv("testEnvJsonObj", "{\n    \"testJson\": \"another test3\"\n  }")
+	assert.Nil(t, err)
+	s := settings.Get("")
+
+	jsonObj := testObject{}
+	err = s.GetObject("testEnvJsonObj", &jsonObj)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "another test3", jsonObj.TheValue, "json obj not equal")
+}
+
+func TestEnvBadObject(t *testing.T) {
+	err := os.Setenv("testEnvBadObj", "this is a bad object")
+	assert.Nil(t, err)
+	badObj := testObject{}
+	s := settings.Get("")
+	err = s.GetObject("testEnvBadObj", &badObj)
+	assert.NotNil(t, err)
 }
 
 func TestFallback(t *testing.T) {
@@ -60,7 +106,16 @@ func TestCashed(t *testing.T) {
 }
 
 func TestJson(t *testing.T) {
-	d1 := []byte("{\n  \"testJsonString\": \"test\",\n  \"testJsonInt\": 1,\n  \"testJsonBool\": true,\n  \"testJsonInt64\": 2,\n  \"testJsonSub\": {\n    \"testJsonStringSub\": \"another test\"\n  }\n}")
+	d1 := []byte("{" +
+		"\n  \"testJsonString\": \"test\"," +
+		"\n  \"testJsonInt\": 1," +
+		"\n  \"testJsonBool\": true," +
+		"\n  \"testJsonInt64\": 2," +
+		"\n  \"testJsonSub\": {" +
+		"\n    \"testJsonStringSub\": \"another test\"" +
+		"\n  }," +
+		"\n  \"testJsonObject\": {\n    \"testJson\": \"another test3\"\n  }" +
+		"\n}")
 	err := ioutil.WriteFile("config.json", d1, 0644)
 	defer os.Remove("config.json")
 	assert.Nil(t, err)
@@ -72,15 +127,30 @@ func TestJson(t *testing.T) {
 	subSetting := s.GetSection("testJsonSub")
 	assert.NotNil(t, subSetting)
 	result5 := subSetting.Get("testJsonStringSub", "")
+	obj := testObject{}
+	err = s.GetObject("testJsonObject", &obj)
+	assert.Nil(t, err)
 	assert.Equal(t, "test", result1, "String not equal")
 	assert.Equal(t, 1, result2, "int not equal")
 	assert.Equal(t, true, result3, "Bool not equal")
 	assert.Equal(t, int64(2), result4, "Int64 not equal")
 	assert.Equal(t, "another test", result5, "Substring not equal")
+	assert.Equal(t, "another test3", obj.TheValue, "Object value not equal")
+}
+
+type testObject struct {
+	TheValue string `json:"testJson" yaml:"testYaml"`
 }
 
 func TestYaml(t *testing.T) {
-	d1 := []byte("testYamlString: test\ntestYamlInt: 1\ntestYamlBool: true\ntestYamlInt64: 2\ntestYamlSubValue:\n    testYamlStringSub: 'another test'")
+	d1 := []byte("testYamlString: test\n" +
+		"testYamlInt: 1\n" +
+		"testYamlBool: true\n" +
+		"testYamlInt64: 2\n" +
+		"testYamlSubValue:\n" +
+		"    testYamlStringSub: 'another test'\n" +
+		"testYamlObject:\n" +
+		"    testYaml: 'another test1'")
 	err := ioutil.WriteFile("config.yaml", d1, 0644)
 	defer os.Remove("config.yaml")
 	assert.Nil(t, err)
@@ -92,9 +162,13 @@ func TestYaml(t *testing.T) {
 	subSetting := s.GetSection("testYamlSubValue")
 	assert.NotNil(t, subSetting)
 	result5 := subSetting.Get("testYamlStringSub", "")
+	obj := testObject{}
+	err = s.GetObject("testYamlObject", &obj)
+	assert.Nil(t, err)
 	assert.Equal(t, "test", result1, "String not equal")
 	assert.Equal(t, 1, result2, "int not equal")
 	assert.Equal(t, true, result3, "Bool not equal")
 	assert.Equal(t, int64(2), result4, "Int64 not equal")
 	assert.Equal(t, "another test", result5, "Substring not equal")
+	assert.Equal(t, "another test1", obj.TheValue, "Object value not equal")
 }
