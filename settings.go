@@ -56,9 +56,8 @@ func getMapInterface(value interface{}) map[string]interface{} {
 func (s *settings) GetObject(key string, obj interface{}) error {
 	if s.configFile != nil {
 		if value, ok := s.configFile.cash[key]; ok {
-			mapValue := getMapInterface(value)
 			if s.configFile.fileType == fileTypeJSON {
-				jsonBody, err := json.Marshal(mapValue)
+				jsonBody, err := json.Marshal(value)
 				if err != nil {
 					return err
 				}
@@ -66,7 +65,7 @@ func (s *settings) GetObject(key string, obj interface{}) error {
 				return json.Unmarshal(jsonBody, obj)
 
 			} else if s.configFile.fileType == fileTypeYAML {
-				yamlBody, err := yaml.Marshal(mapValue)
+				yamlBody, err := yaml.Marshal(value)
 				if err != nil {
 					return err
 				}

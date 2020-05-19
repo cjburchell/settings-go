@@ -106,16 +106,24 @@ func TestCashed(t *testing.T) {
 }
 
 func TestJson(t *testing.T) {
-	d1 := []byte("{" +
-		"\n  \"testJsonString\": \"test\"," +
-		"\n  \"testJsonInt\": 1," +
-		"\n  \"testJsonBool\": true," +
-		"\n  \"testJsonInt64\": 2," +
-		"\n  \"testJsonSub\": {" +
-		"\n    \"testJsonStringSub\": \"another test\"" +
-		"\n  }," +
-		"\n  \"testJsonObject\": {\n    \"testJson\": \"another test3\"\n  }" +
-		"\n}")
+	d1 := []byte(`
+{
+   "testJsonString":"test",
+   "testJsonInt":1,
+   "testJsonBool":true,
+   "testJsonInt64":2,
+   "testJsonSub":{
+      "testJsonStringSub":"another test"
+   },
+   "testJsonObject":{
+      "testJson":"another test3"
+   },
+   "testJsonArray":[
+      {
+         "testJson":"another test4"
+      }
+   ]
+}`)
 	err := ioutil.WriteFile("config.json", d1, 0644)
 	defer os.Remove("config.json")
 	assert.Nil(t, err)
@@ -130,12 +138,19 @@ func TestJson(t *testing.T) {
 	obj := testObject{}
 	err = s.GetObject("testJsonObject", &obj)
 	assert.Nil(t, err)
+
+	objArray := make([]testObject, 0)
+	err = s.GetObject("testJsonArray", &objArray)
+	assert.Nil(t, err)
+
 	assert.Equal(t, "test", result1, "String not equal")
 	assert.Equal(t, 1, result2, "int not equal")
 	assert.Equal(t, true, result3, "Bool not equal")
 	assert.Equal(t, int64(2), result4, "Int64 not equal")
 	assert.Equal(t, "another test", result5, "Substring not equal")
 	assert.Equal(t, "another test3", obj.TheValue, "Object value not equal")
+	assert.Equal(t, 1, len(objArray), "Array Size not equal")
+	assert.Equal(t, "another test4", objArray[0].TheValue, "Object array value not equal")
 }
 
 type testObject struct {
